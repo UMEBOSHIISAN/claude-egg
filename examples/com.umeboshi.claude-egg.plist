@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+    launchd agent template for the Claude-EGG daemon.
+
+    Usage (one-time, after editing the paths below):
+
+        cp examples/com.umeboshi.claude-egg.plist ~/Library/LaunchAgents/
+        launchctl load  ~/Library/LaunchAgents/com.umeboshi.claude-egg.plist
+        launchctl start com.umeboshi.claude-egg
+
+    Unload / stop:
+
+        launchctl unload ~/Library/LaunchAgents/com.umeboshi.claude-egg.plist
+
+    Check status:
+
+        launchctl list | grep claude-egg
+
+    Logs go to ~/Library/Logs/claude-egg.{out,err}.log.
+
+    Edit the three paths marked EDIT_ME below before loading. Everything
+    else can stay as-is.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.umeboshi.claude-egg</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <!-- EDIT_ME: full path to the venv's python. -->
+        <string>/Users/YOUR_USERNAME/path/to/claude-egg/tools/.venv/bin/python</string>
+        <!-- EDIT_ME: full path to the daemon script. -->
+        <string>/Users/YOUR_USERNAME/path/to/claude-egg/tools/claude_usage_digest.py</string>
+    </array>
+
+    <!-- EDIT_ME: working directory. Same parent as the paths above. -->
+    <key>WorkingDirectory</key>
+    <string>/Users/YOUR_USERNAME/path/to/claude-egg</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+        <key>Crashed</key>
+        <true/>
+    </dict>
+
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+
+    <key>ProcessType</key>
+    <string>Background</string>
+
+    <key>StandardOutPath</key>
+    <string>/Users/YOUR_USERNAME/Library/Logs/claude-egg.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/YOUR_USERNAME/Library/Logs/claude-egg.err.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/usr/bin:/bin</string>
+    </dict>
+</dict>
+</plist>

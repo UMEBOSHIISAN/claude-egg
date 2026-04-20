@@ -4,8 +4,8 @@
 
 ---
 
-> **Status: Phase A firmware runs on the Cardputer today.**
-> Shapes-based renderer, local demo mode, no BLE yet. Flash it in two minutes and the tartan frog is already there. Phase B adds BLE NUS heartbeats from a Mac daemon so the pet actually *lives* on your Claude usage. Phase C swaps the shape renderer for LittleFS-backed GIFs. See [the roadmap](#roadmap) below.
+> **Status: Phase A + Phase B running end-to-end today.**
+> The Cardputer flashes in two minutes (shapes-based renderer, no assets yet). A macOS background daemon tails your Claude Code session logs, rolls up today's active minutes + late-night streak, and pushes a JSON heartbeat to the device over BLE NUS every 10 seconds. The pet's stage and mood update in real time from your actual usage. Phase C swaps the shape renderer for LittleFS-backed GIFs. See [the roadmap](#roadmap) below.
 
 ---
 
@@ -106,7 +106,34 @@ Phase A has no BLE yet, so the Cardputer's QWERTY keyboard drives the state dire
 
 **Highlights to try first:** `3` then `t` for the 3 a.m. belly-up sick frog with X eyes. `5` for the pond-sage. `1` for the egg (watch for the crack on the top when `late_night_streak` is nonzero).
 
-When Phase B lands the keyboard keeps working as a debug override — the heartbeat-driven state just becomes the "real" state on top of it.
+The keyboard keeps working as a debug override even when the daemon is connected — press any of the keys above and the header shows `MANUAL` in amber to say "heartbeat-driven state is frozen." Press `0` to release the override and let heartbeats drive the state again.
+
+## Run the daemon — five minutes
+
+The daemon is what makes the pet actually *live* on your Claude usage. Without it, Phase A's keyboard demo is the whole experience.
+
+```bash
+# One-time: set up a venv and install bleak.
+cd tools
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+cd ..
+
+# Start it (keeps running until you Ctrl-C):
+tools/.venv/bin/python tools/claude_usage_digest.py
+```
+
+On first run macOS will prompt you to allow Bluetooth access for your terminal (or for Python itself, depending on how you launched it). Grant it. The daemon will then scan for the Cardputer advertising as `Claude-EGG`, connect, and start pushing one heartbeat every 10 seconds:
+
+```
+21:46:30  INFO    scanning for 'Claude-EGG'...
+21:46:30  INFO    connected to 71FFB59E-...
+21:46:34  INFO    heartbeat: life=9908 today=501 active=True late_streak=2 silent_h=0
+```
+
+On the Cardputer, the BLE indicator (top-right dot) flips from magenta to **green** when the daemon connects. The pet's stage and mood shift to match your real usage. State is persisted at `~/Library/Application Support/claude-egg/state.json` between runs.
+
+To keep the daemon running across reboots, install it as a launchd agent — see [`examples/com.umeboshi.claude-egg.plist`](examples/com.umeboshi.claude-egg.plist) for a ready-to-edit template.
 
 ## The swap surface
 
@@ -225,10 +252,11 @@ The daemon is stateless with respect to the pet. All pet identity — thresholds
 - QWERTY keys drive stage / mood so development works without a host daemon.
 - No BLE, no LittleFS assets yet — pure render loop.
 
-### Phase B — host daemon + BLE heartbeat
-- `tools/claude_usage_digest.py` tails `~/.claude/projects/**/*.jsonl`, rolls up today's active minutes, detects late-night streaks, and emits the heartbeat JSON above every 10 s over BLE NUS.
-- launchd agent (`com.umeboshi.claude-egg`) keeps the daemon running.
-- Firmware replaces the keyboard-driven state with heartbeat-driven state; keyboard keeps working as a debug override.
+### Phase B — host daemon + BLE heartbeat ✅ shipped
+- `tools/claude_usage_digest.py` tails `~/.claude/projects/**/*.jsonl`, rolls up today's active minutes, detects late-night streaks, and pushes the heartbeat JSON above every 10 s over BLE NUS.
+- Firmware computes stage from `lifetime_min` and mood from the rest (priority: SICK > ZEN > LONELY > GRUMPY > TIRED > EXCITED > HAPPY). Keyboard keeps working as a debug override (press `0` to release).
+- State persisted to `~/Library/Application Support/claude-egg/state.json` between runs.
+- launchd agent template ships at [`examples/com.umeboshi.claude-egg.plist`](examples/com.umeboshi.claude-egg.plist).
 
 ### Phase C — LittleFS asset swaps
 - AnimatedGIF + LittleFS renderer replaces the current shape renderer.
@@ -259,7 +287,11 @@ claude-egg/
 ├── src/
 │   └── main.cpp                   ← Phase A firmware
 ├── tools/
-│   └── claude_usage_digest.py     ← Phase B daemon skeleton
+│   ├── README.md                  ← host daemon guide
+│   ├── claude_usage_digest.py     ← Phase B daemon
+│   └── requirements.txt
+├── examples/
+│   └── com.umeboshi.claude-egg.plist  ← launchd agent template
 ├── data/                          ← LittleFS image staging (Phase C)
 │   └── chars/
 ├── docs/
@@ -271,6 +303,22 @@ claude-egg/
     └── tartan/                    ← UMEBOSHI reference pack (frog, CC-BY-NC-4.0)
         └── manifest.yaml
 ```
+
+## Troubleshooting
+
+**The Cardputer screen stays black after flashing.** Press the side reset button once. First-boot resets sometimes hang between flash and app-start; a manual reset is enough. If the screen still stays dark, check that `platformio.ini` points at `m5cardputer` and re-run `pio run -e m5cardputer -t upload`.
+
+**The daemon says `Bluetooth device is turned off`.** macOS Bluetooth is off or the terminal doesn't have Bluetooth permission. Open System Settings → Privacy & Security → Bluetooth, make sure Terminal (or whichever shell you launched the daemon from) is allowed. Flip BT off and on if the list looks right but the daemon still fails.
+
+**The daemon says `device 'Claude-EGG' not found`.** The Cardputer isn't advertising. Reset it (side button), wait ~5 seconds for BLE to come up, and the daemon will retry automatically on the next loop. If it still can't find it, check that the firmware actually booted — the header should read `Claude-EGG :: default`. If you see a blank screen, re-flash.
+
+**Heartbeats are flowing but the pet isn't changing.** The keyboard override is probably stuck on. Look at the header: if you see a `MANUAL` badge in amber, the keyboard took control and froze the heartbeat-driven state. Press `0` on the Cardputer to release.
+
+**`pip install bleak` fails with a pyobjc warning.** That warning is harmless on macOS and doesn't prevent install. If it genuinely errors out, upgrade pip first: `tools/.venv/bin/pip install --upgrade pip`, then retry.
+
+**The pet's stage / mood doesn't match what I expect.** Stage comes from `lifetime_min` (cumulative minutes). Mood comes from today's minutes, late-night streak, and silence. Run the daemon once with `INFO` logging (the default) and you'll see the exact numbers it's sending — compare those against the tables in [What the default pack does](#what-the-default-pack-does).
+
+**The daemon dies when the Cardputer sleeps / is unplugged.** Expected. The daemon reconnects automatically when the device comes back. If you want it supervised across reboots, use the launchd agent template in `examples/`.
 
 ## Contributing
 
