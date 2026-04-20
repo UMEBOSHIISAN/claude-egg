@@ -207,13 +207,21 @@ Firmware computes stage from `lifetime_min` and mood from the rest. Stage thresh
 - Streaks as rewards. Dangerous gamification vector; don't turn Claude usage into a Duolingo-style trap.
 - Cloud sync. No.
 
-## 7. Open questions for the next work session
+## 7. Open questions
 
-1. Confirm `~/.claude/projects/*/` timestamp coverage — are assistant messages consistently timestamped, or only user messages?
-2. Default pack art direction — pixel blob? ASCII creature? Something else that's obviously "placeholder but lovable"?
-3. Repo public-or-private decision — runs into the 4/20 memory: cardputer-buddy公開強化は独立ADR. *This* repo is not cardputer-buddy, but the same principle may apply. Decide at fork time, not at scaffold time.
-4. Does the daemon also expose a CLI (`claude-egg today`) or is BLE the only surface? CLI is cheap and useful offline.
-5. Pack discovery — fetch manifest index from a community list, or strictly local?
+Resolved:
+
+- ~~Repo public-or-private decision.~~ **Public** as of 2026-04-20. Published at `github.com/UMEBOSHIISAN/claude-egg` after Phase A firmware shipped on the Cardputer. Separate from the `claude-cardputer-buddy` public-strengthening ADR because Claude-EGG is a narrower project (a creature that grows) and doesn't inherit that repo's observation-coupling concerns.
+- ~~Reference pack choice.~~ Changed from "shisoko (しそこ)" to **tartan (タータン)**, a frog — chosen because the water-based body (puffing / drying / belly-up) gives stronger visual signal per mood than a plum would, and the 3 a.m. belly-up frame is readable at 240×135 with shapes alone (Phase A).
+- ~~Hardware scope.~~ Cardputer-only. M5StickCPlus is explicitly out of scope because the keyboard-based pack switcher and the 56-key QWERTY input path are central to the Phase A UX; a two-button StickCPlus would need a different interaction model entirely.
+
+Still open:
+
+1. Confirm `~/.claude/projects/*/` timestamp coverage — are assistant messages consistently timestamped, or only user messages? This drives whether "active minute" is defined on user messages alone or on any message.
+2. Default pack art direction — placeholder blob, ASCII creature, something else obviously-placeholder-but-lovable? Current scaffold has no sprite at all.
+3. Does the daemon also expose a CLI (`claude-egg today`) or is BLE the only surface? CLI is cheap and useful offline (especially while traveling without the Cardputer).
+4. Pack discovery — fetch a community manifest index over HTTPS, or strictly local / git-based?
+5. Pack layering — at what point does the single-pack `buddies/<name>/` format get split into independent sprite / voice / rule axes? Currently the `lines/*.yaml:weight` field is reserved for this future format.
 
 ## 8. Directory map of this scaffold
 
