@@ -1,0 +1,58 @@
+name: tartan
+display_name: タータン
+author: UMEBOSHI
+license: CC-BY-NC-4.0
+redistribution: non-commercial only
+version: 1
+description: >
+  Claude-EGG reference pack. A frog that grows with your Claude Code
+  sessions — puffs up when well-fed, dries out when starved, and turns
+  belly-up with X eyes when you push it past 1 a.m.
+  Non-commercial only; see license.
+
+# This pack is NOT under the repo's MIT license.
+# Attribution required. No commercial redistribution.
+
+# Stage thresholds in cumulative active minutes.
+# Visual identity per stage (informational, see sprites/):
+#   egg   = egg          (0 – 30 min)
+#   child = tadpole      (30 min – 10 h)
+#   teen  = young frog   (10 h – 50 h)
+#   adult = toad         (50 h – 300 h)
+#   elder = pond-sage    (300 h+)
+stages:
+  egg:    0
+  child:  30
+  teen:   600
+  adult:  3000
+  elder:  18000
+
+# Frame mapping. Keys are "<stage>_<mood>". Values are filenames in sprites/.
+# "_default" is the catch-all for missing moods; firmware falls back to it.
+frames:
+  egg_default:     egg.gif
+
+  child_happy:     tadpole_happy.gif
+  child_excited:   tadpole_excited.gif
+  child_tired:     tadpole_tired.gif
+  child_sick:      tadpole_sick.gif      # belly-up in a puddle, X eyes
+  child_lonely:    tadpole_lonely.gif
+  child_default:   tadpole_happy.gif
+
+  teen_happy:      frog_happy.gif        # adequately fed
+  teen_excited:    frog_excited.gif      # session active right now
+  teen_tired:      frog_tired.gif
+  teen_grumpy:     frog_grumpy.gif
+  teen_sick:       frog_sick.gif         # 3 a.m. belly-up, X eyes
+  teen_lonely:     frog_lonely.gif       # staring at empty pond
+  teen_default:    frog_happy.gif
+
+  adult_happy:     toad_happy.gif        # chunky but healthy
+  adult_tired:     toad_tired.gif
+  adult_grumpy:    toad_grumpy.gif
+  adult_sick:      toad_sick.gif
+  adult_default:   toad_happy.gif
+
+  elder_default:   pond_sage.gif         # weathered, serene, slightly mummified
+
+lines_fallback: default

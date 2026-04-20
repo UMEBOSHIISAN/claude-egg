@@ -55,4 +55,4 @@ _Empty. Yours could be first._
 ## Built-in packs
 
 - [`default/`](default/) — MIT-licensed generic placeholder. Use this as a fork template.
-- [`shisoko/`](shisoko/) — UMEBOSHI reference pack. CC-BY-NC-4.0. Ships as the worked example of a branded character.
+- [`tartan/`](tartan/) — **タータン**, UMEBOSHI reference pack. A frog that puffs up when well-fed and turns belly-up at 3 a.m. CC-BY-NC-4.0. Ships as the worked example of a branded character.

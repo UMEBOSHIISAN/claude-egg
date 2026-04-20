@@ -116,8 +116,8 @@ buddies/<name>/
 ### 4.1 `manifest.yaml` schema
 
 ```yaml
-name: shisoko
-display_name: しそこ
+name: tartan
+display_name: タータン
 author: UMEBOSHI
 license: CC-BY-NC-4.0         # per-pack, not inherited from repo
 version: 1
@@ -231,7 +231,7 @@ claude-egg/
 │   ├── README.md                   ← pack author guide
 │   ├── default/                    ← MIT placeholder pack
 │   │   └── manifest.yaml
-│   └── shisoko/                    ← UMEBOSHI reference pack
+│   └── tartan/                     ← UMEBOSHI reference pack (frog, CC-BY-NC-4.0)
 │       └── manifest.yaml
 ├── tools/
 │   └── claude_usage_digest.py      ← host daemon skeleton
