@@ -1,0 +1,24 @@
+name: default
+display_name: Pixel Blob
+author: claude-egg contributors
+license: MIT
+version: 1
+description: >
+  Placeholder pack. Ships with the repo so forks start from a working
+  manifest. Replace every file under sprites/ and lines/ to make it yours.
+
+stages:
+  egg:   0
+  child: 30
+  teen:  600
+  adult: 3000
+  elder: 18000
+
+frames:
+  egg_default:    egg.gif
+  child_default:  child.gif
+  teen_default:   teen.gif
+  adult_default:  adult.gif
+  elder_default:  elder.gif
+
+lines_fallback: default

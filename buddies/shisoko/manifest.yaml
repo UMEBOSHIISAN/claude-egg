@@ -1,0 +1,37 @@
+name: shisoko
+display_name: しそこ
+author: UMEBOSHI
+license: CC-BY-NC-4.0
+redistribution: non-commercial only
+version: 1
+description: >
+  UMEBOSHI reference pack. Ships as the worked example of a branded
+  character. Non-commercial only; see license.
+
+# This pack is NOT under the repo's MIT license.
+# Attribution required. No commercial redistribution.
+
+stages:
+  egg:   0
+  child: 30
+  teen:  600
+  adult: 3000
+  elder: 18000
+
+frames:
+  egg_default:    egg.gif
+  child_happy:    child_happy.gif
+  child_tired:    child_tired.gif
+  child_default:  child_happy.gif
+  teen_happy:     teen_happy.gif
+  teen_grumpy:    teen_grumpy.gif
+  teen_sick:      teen_sick.gif
+  teen_default:   teen_happy.gif
+  adult_happy:    adult_happy.gif
+  adult_tired:    adult_tired.gif
+  adult_grumpy:   adult_grumpy.gif
+  adult_sick:     adult_sick.gif
+  adult_default:  adult_happy.gif
+  elder_default:  elder.gif
+
+lines_fallback: default

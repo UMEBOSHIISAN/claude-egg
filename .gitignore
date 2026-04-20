@@ -1,0 +1,22 @@
+# PlatformIO
+.pio/
+.pioenvs/
+.piolibdeps/
+.vscode/
+*.pyc
+
+# LittleFS build artefacts
+.pio/build/**/littlefs.bin
+
+# Host daemon
+tools/__pycache__/
+tools/*.pyc
+tools/.venv/
+tools/state.json
+
+# macOS
+.DS_Store
+
+# Editor
+*.swp
+*~
