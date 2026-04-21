@@ -1,13 +1,15 @@
-// Claude-EGG firmware — Phase B (BLE NUS heartbeat + local keyboard debug)
+// Claude-EGG firmware — Phase C (GIF sprite renderer with shapes fallback)
 //
-// The Mac daemon (tools/claude_usage_digest.py) emits a single-line JSON
-// heartbeat every 10 s over the Nordic UART Service. We parse it into
-// PetState and recompute mood. The QWERTY keys still work as a debug
-// override so you can force stage/mood without the daemon running.
+// Phase A: shapes-based pet renderer + keyboard debug override
+// Phase B: BLE NUS heartbeat from Mac daemon (claude_usage_digest.py)
+// Phase C: LittleFS GIF sprites. If /<buddy>/sprites/<stage>_<mood>.gif
+//          exists it is drawn; otherwise falls back to Phase A shapes.
+//          Flash sprites separately: pio run -t uploadfs
 //
 // Heartbeat JSON:
 //   { "type":"egg.heartbeat", "v":1,
-//     "lifetime_min":12847, "today_min":412,
+//     "lifetime_min":12847, "today_min":412, "today_late_min":0,
+//     "yesterday_min":389, "yesterday_late_min":0,
 //     "active_now":true, "late_night_streak":2,
 //     "silent_hours":0, "ts":"2026-04-20T14:33:02Z" }
 //
@@ -19,6 +21,8 @@
 #include <M5Cardputer.h>
 #include <NimBLEDevice.h>
 #include <ArduinoJson.h>
+#include <LittleFS.h>
+#include <AnimatedGIF.h>
 
 #ifndef DEFAULT_BUDDY
 #define DEFAULT_BUDDY "default"
@@ -145,7 +149,69 @@ static const uint16_t COL_ACCENT = 0xFD20;
 static const uint16_t COL_BLE_OK = 0x07E0;  // green
 static const uint16_t COL_BLE_NO = 0x780F;  // magenta
 
-// ---- rendering (same shape renderer as Phase A) ---------------------------
+// ---- GIF renderer (Phase C) -----------------------------------------------
+
+static AnimatedGIF g_gif;
+static File        g_gif_file;
+static bool        g_lfs_ok = false;
+
+static void* gifOpen(const char* fname, int32_t* size) {
+  g_gif_file = LittleFS.open(fname);
+  if (!g_gif_file) return nullptr;
+  *size = g_gif_file.size();
+  return &g_gif_file;
+}
+
+static void gifClose(void* handle) {
+  if (handle) ((File*)handle)->close();
+}
+
+static int32_t gifRead(GIFFILE* pFile, uint8_t* buf, int32_t len) {
+  File* f = (File*)pFile->fHandle;
+  int32_t avail = pFile->iSize - pFile->iPos;
+  if (len > avail) len = avail;
+  len = (int32_t)f->read(buf, len);
+  pFile->iPos = f->position();
+  return len;
+}
+
+static int32_t gifSeek(GIFFILE* pFile, int32_t pos) {
+  File* f = (File*)pFile->fHandle;
+  f->seek(pos);
+  pFile->iPos = (int32_t)f->position();
+  return pFile->iPos;
+}
+
+static void gifLineDraw(GIFDRAW* pDraw) {
+  uint8_t*  src = pDraw->pPixels;
+  uint16_t* pal = pDraw->pPalette;
+  static uint16_t line[240];
+  for (int x = 0; x < pDraw->iWidth; x++) line[x] = pal[src[x]];
+  // GIF canvas starts at kBodyTop so the header strip stays intact
+  M5Cardputer.Display.pushImage(pDraw->iX, kBodyTop + pDraw->iY + pDraw->y,
+                                pDraw->iWidth, 1, line);
+}
+
+// Returns true if a GIF was found and drawn (first frame only).
+static bool tryDrawGif(Stage stage, Mood mood) {
+  if (!g_lfs_ok) return false;
+  char path[80], fallback[80];
+  snprintf(path,     sizeof(path),     "/%s/sprites/%s_%s.gif",
+           DEFAULT_BUDDY, kStageName[stage], kMoodName[mood]);
+  snprintf(fallback, sizeof(fallback), "/%s/sprites/%s_default.gif",
+           DEFAULT_BUDDY, kStageName[stage]);
+  const char* tries[2] = { path, fallback };
+  for (auto p : tries) {
+    if (g_gif.open(p, gifOpen, gifClose, gifRead, gifSeek, gifLineDraw)) {
+      g_gif.playFrame(true, nullptr);
+      g_gif.close();
+      return true;
+    }
+  }
+  return false;
+}
+
+// ---- rendering (shapes fallback — used when no GIF is present) ------------
 
 static uint16_t bodyTintForMood(Mood m) {
   switch (m) {
@@ -361,13 +427,15 @@ static void drawFooter() {
 
 static void drawPet() {
   M5Cardputer.Display.fillRect(0, kBodyTop, kScreenW, kBodyBot - kBodyTop, COL_BG);
-  switch (g_state.stage) {
-    case STAGE_EGG:   drawEgg(); break;
-    case STAGE_CHILD: drawTadpole(g_state.mood); break;
-    case STAGE_TEEN:  drawFrog(g_state.mood, 32, 20); break;
-    case STAGE_ADULT: drawFrog(g_state.mood, 44, 26); break;
-    case STAGE_ELDER: drawPondSage(); break;
-    default: break;
+  if (!tryDrawGif(g_state.stage, g_state.mood)) {
+    switch (g_state.stage) {
+      case STAGE_EGG:   drawEgg(); break;
+      case STAGE_CHILD: drawTadpole(g_state.mood); break;
+      case STAGE_TEEN:  drawFrog(g_state.mood, 32, 20); break;
+      case STAGE_ADULT: drawFrog(g_state.mood, 44, 26); break;
+      case STAGE_ELDER: drawPondSage(); break;
+      default: break;
+    }
   }
   if (g_state.active_now) {
     M5Cardputer.Display.fillCircle(kScreenW - 8, kBodyTop + 6, 3, COL_ACCENT);
@@ -507,6 +575,8 @@ void setup() {
   M5Cardputer.begin(cfg, true);
   M5Cardputer.Display.setRotation(1);
   M5Cardputer.Display.setBrightness(80);
+  g_lfs_ok = LittleFS.begin(false);
+  g_gif.begin(GIF_PALETTE_RGB565_BE);
   redrawAll();
   startBle();
 }
