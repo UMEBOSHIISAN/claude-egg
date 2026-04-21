@@ -107,9 +107,16 @@ def late_night_streak(buckets: dict[str, set[str]]) -> int:
     return streak
 
 
+def _late_minutes_in_day(buckets: dict[str, set[str]], day_key: str) -> int:
+    return sum(1 for m in buckets.get(day_key, set())
+               if LATE_NIGHT_START <= m < LATE_NIGHT_END)
+
+
 def build_heartbeat(root: pathlib.Path) -> dict:
     buckets, last_utc = active_minutes_by_day(iter_timestamped_events(root))
-    today_key = dt.date.today().strftime("%Y-%m-%d")
+    today_key     = dt.date.today().strftime("%Y-%m-%d")
+    yesterday_key = (dt.date.today() - dt.timedelta(days=1)).strftime("%Y-%m-%d")
+
     lifetime_min = sum(len(v) for v in buckets.values())
     today_min    = len(buckets.get(today_key, set()))
 
@@ -126,6 +133,9 @@ def build_heartbeat(root: pathlib.Path) -> dict:
         "v":                 1,
         "lifetime_min":      lifetime_min,
         "today_min":         today_min,
+        "today_late_min":    _late_minutes_in_day(buckets, today_key),
+        "yesterday_min":     len(buckets.get(yesterday_key, set())),
+        "yesterday_late_min":_late_minutes_in_day(buckets, yesterday_key),
         "active_now":        active_now,
         "late_night_streak": late_night_streak(buckets),
         "silent_hours":      int(silent_s // 3600),

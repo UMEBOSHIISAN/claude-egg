@@ -103,8 +103,9 @@ Phase A has no BLE yet, so the Cardputer's QWERTY keyboard drives the state dire
 | `q` `w` `e` `r` `t` `y` | mood = happy / excited / tired / grumpy / sick / lonely                  |
 | `a`              | toggle the "active now" indicator — an amber pulse dot at the top right         |
 | `+` / `-`        | bump today+lifetime minutes by ±30 (watch the footer update)                    |
+| `p`              | toggle postmortem view — shows yesterday's full diagnosis (minutes, late-night, streak, verdict) |
 
-**Highlights to try first:** `3` then `t` for the 3 a.m. belly-up sick frog with X eyes. `5` for the pond-sage. `1` for the egg (watch for the crack on the top when `late_night_streak` is nonzero).
+**Highlights to try first:** `3` then `t` for the 3 a.m. belly-up sick frog with X eyes. `5` for the pond-sage. `1` for the egg (watch for the crack on the top when `late_night_streak` is nonzero). `p` to see the postmortem verdict screen.
 
 The keyboard keeps working as a debug override even when the daemon is connected — press any of the keys above and the header shows `MANUAL` in amber to say "heartbeat-driven state is frozen." Press `0` to release the override and let heartbeats drive the state again.
 
@@ -217,29 +218,35 @@ The host daemon emits one heartbeat every 10 seconds over the Nordic UART Servic
 
 ```json
 {
-  "type":              "egg.heartbeat",
-  "v":                 1,
-  "lifetime_min":      12847,
-  "today_min":         412,
-  "active_now":        true,
-  "late_night_streak": 2,
-  "silent_hours":      0,
-  "ts":                "2026-04-20T14:33:02Z"
+  "type":               "egg.heartbeat",
+  "v":                  1,
+  "lifetime_min":       12847,
+  "today_min":          412,
+  "today_late_min":     23,
+  "yesterday_min":      389,
+  "yesterday_late_min": 0,
+  "active_now":         true,
+  "late_night_streak":  2,
+  "silent_hours":       0,
+  "ts":                 "2026-04-20T14:33:02Z"
 }
 ```
 
 Fields:
 
-| Field                | Meaning                                                                   |
-|----------------------|---------------------------------------------------------------------------|
-| `type`               | Always `egg.heartbeat`. Reserved so other message types can coexist.       |
-| `v`                  | Protocol version. Firmware rejects packets it doesn't recognize.           |
-| `lifetime_min`       | Cumulative active minutes across the pet's entire lifetime. Monotonic.     |
-| `today_min`          | Active minutes so far today (local midnight to now).                       |
-| `active_now`         | True if there was activity in the last 60 s. Drives the amber pulse dot.   |
-| `late_night_streak`  | How many consecutive nights had activity after 01:00 local time.           |
-| `silent_hours`       | Hours since the last activity. Drives lonely / zen transitions.            |
-| `ts`                 | UTC ISO-8601 timestamp. Firmware only uses this for ordering, not display. |
+| Field                 | Meaning                                                                    |
+|-----------------------|----------------------------------------------------------------------------|
+| `type`                | Always `egg.heartbeat`. Reserved so other message types can coexist.       |
+| `v`                   | Protocol version. Firmware rejects packets it doesn't recognize.           |
+| `lifetime_min`        | Cumulative active minutes across the pet's entire lifetime. Monotonic.     |
+| `today_min`           | Active minutes so far today (local midnight to now).                       |
+| `today_late_min`      | Today's active minutes that fall in the 01:00–05:00 window.                |
+| `yesterday_min`       | Active minutes for the previous calendar day.                              |
+| `yesterday_late_min`  | Yesterday's active minutes in the 01:00–05:00 window. Feeds the postmortem verdict. |
+| `active_now`          | True if there was activity in the last 60 s. Drives the amber pulse dot.   |
+| `late_night_streak`   | How many consecutive nights had activity after 01:00 local time.           |
+| `silent_hours`        | Hours since the last activity. Drives lonely / zen transitions.            |
+| `ts`                  | UTC ISO-8601 timestamp. Firmware only uses this for ordering, not display. |
 
 The firmware computes **stage** from `lifetime_min`, and **mood** from the remaining fields plus its own clock. Stage thresholds come from the manifest on the *device* side, which means swapping a pack changes growth curves **without restarting the daemon**.
 

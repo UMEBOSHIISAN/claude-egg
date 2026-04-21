@@ -61,16 +61,25 @@ static const char* kMoodName[MOOD_COUNT] = {
   "happy", "excited", "tired", "grumpy", "sick", "lonely", "zen"
 };
 
+enum Mode {
+  MODE_NORMAL = 0,
+  MODE_POSTMORTEM,
+};
+
 struct PetState {
   Stage stage;
   Mood  mood;
   int   today_min;
+  int   today_late_min;
+  int   yesterday_min;
+  int   yesterday_late_min;
   int   lifetime_min;
   bool  active_now;
   int   late_night_streak;
   int   silent_hours;
   bool  ble_connected;
   bool  manual_override;     // true if the keyboard has taken over
+  Mode  mode;
   unsigned long last_heartbeat_ms;
 };
 
@@ -78,12 +87,16 @@ static PetState g_state = {
   .stage = STAGE_EGG,
   .mood  = MOOD_HAPPY,
   .today_min = 0,
+  .today_late_min = 0,
+  .yesterday_min = 0,
+  .yesterday_late_min = 0,
   .lifetime_min = 0,
   .active_now = false,
   .late_night_streak = 0,
   .silent_hours = 0,
   .ble_connected = false,
   .manual_override = false,
+  .mode = MODE_NORMAL,
   .last_heartbeat_ms = 0,
 };
 
@@ -250,6 +263,72 @@ static void drawPondSage() {
   M5Cardputer.Display.fillTriangle(cx + 34, cy + 22, cx + 42, cy + 20, cx + 40, cy + 26, COL_ACCENT);
 }
 
+static const char* postmortemVerdict(int min, int late, int streak) {
+  if (min == 0)                     return "A quiet day. Good.";
+  if (late > 0 && streak >= 2)      return "Past 1 a.m. again. Please rest.";
+  if (late > 0)                     return "Some minutes past 1 a.m.";
+  if (min >= 480)                   return "You went hard. Drink water.";
+  if (min >= 240)                   return "A long day.";
+  if (min >= 60)                    return "Balanced.";
+  return "Light usage.";
+}
+
+static void drawPostmortem() {
+  M5Cardputer.Display.fillScreen(COL_BG);
+
+  // Header strip
+  M5Cardputer.Display.fillRect(0, 0, kScreenW, kHeaderH, 0x2104);
+  M5Cardputer.Display.setTextColor(COL_ACCENT, 0x2104);
+  M5Cardputer.Display.setTextSize(1);
+  M5Cardputer.Display.setCursor(4, 4);
+  M5Cardputer.Display.print("POSTMORTEM :: yesterday");
+  M5Cardputer.Display.setTextColor(COL_DIM, 0x2104);
+  M5Cardputer.Display.setCursor(kScreenW - 36, 4);
+  M5Cardputer.Display.print("p:back");
+
+  // Big minute figure
+  M5Cardputer.Display.setTextColor(COL_TEXT, COL_BG);
+  M5Cardputer.Display.setTextSize(3);
+  char big[12];
+  snprintf(big, sizeof(big), "%d", g_state.yesterday_min);
+  int bigW = M5Cardputer.Display.textWidth(big);
+  M5Cardputer.Display.setCursor((kScreenW - bigW) / 2, 28);
+  M5Cardputer.Display.print(big);
+
+  M5Cardputer.Display.setTextSize(1);
+  M5Cardputer.Display.setTextColor(COL_DIM, COL_BG);
+  const char* unit = "active minutes";
+  int uW = M5Cardputer.Display.textWidth(unit);
+  M5Cardputer.Display.setCursor((kScreenW - uW) / 2, 54);
+  M5Cardputer.Display.print(unit);
+
+  // Metrics row
+  M5Cardputer.Display.setTextColor(COL_TEXT, COL_BG);
+  M5Cardputer.Display.setCursor(16, 72);
+  M5Cardputer.Display.printf("late 1am-5am : %dm", g_state.yesterday_late_min);
+  M5Cardputer.Display.setCursor(16, 82);
+  M5Cardputer.Display.printf("late streak  : %d day(s)", g_state.late_night_streak);
+  M5Cardputer.Display.setCursor(16, 92);
+  M5Cardputer.Display.printf("lifetime     : %dm", g_state.lifetime_min);
+
+  // Verdict line
+  const char* v = postmortemVerdict(
+    g_state.yesterday_min, g_state.yesterday_late_min, g_state.late_night_streak);
+  uint16_t vc = (g_state.yesterday_late_min > 0) ? COL_SICK : COL_BLE_OK;
+  M5Cardputer.Display.setTextColor(vc, COL_BG);
+  int vW = M5Cardputer.Display.textWidth(v);
+  M5Cardputer.Display.setCursor((kScreenW - vW) / 2, 110);
+  M5Cardputer.Display.print(v);
+
+  // Footer hint
+  M5Cardputer.Display.fillRect(0, kScreenH - kFooterH, kScreenW, kFooterH, 0x2104);
+  M5Cardputer.Display.setTextColor(COL_DIM, 0x2104);
+  M5Cardputer.Display.setCursor(4, kScreenH - kFooterH + 5);
+  M5Cardputer.Display.print("today so far: ");
+  M5Cardputer.Display.setTextColor(COL_TEXT, 0x2104);
+  M5Cardputer.Display.printf("%dm (%dm late)", g_state.today_min, g_state.today_late_min);
+}
+
 static void drawHeader() {
   M5Cardputer.Display.fillRect(0, 0, kScreenW, kHeaderH, 0x2104);
   M5Cardputer.Display.setTextColor(COL_TEXT, 0x2104);
@@ -296,6 +375,10 @@ static void drawPet() {
 }
 
 static void redrawAll() {
+  if (g_state.mode == MODE_POSTMORTEM) {
+    drawPostmortem();
+    return;
+  }
   M5Cardputer.Display.fillScreen(COL_BG);
   drawHeader();
   drawPet();
@@ -312,11 +395,14 @@ static void applyHeartbeat(const JsonDocument& doc) {
   int v = doc["v"] | 0;
   if (strcmp(type, "egg.heartbeat") != 0 || v != 1) return;
 
-  g_state.lifetime_min     = doc["lifetime_min"]      | g_state.lifetime_min;
-  g_state.today_min        = doc["today_min"]         | g_state.today_min;
-  g_state.active_now       = doc["active_now"]        | false;
-  g_state.late_night_streak= doc["late_night_streak"] | 0;
-  g_state.silent_hours     = doc["silent_hours"]      | 0;
+  g_state.lifetime_min       = doc["lifetime_min"]       | g_state.lifetime_min;
+  g_state.today_min          = doc["today_min"]          | g_state.today_min;
+  g_state.today_late_min     = doc["today_late_min"]     | 0;
+  g_state.yesterday_min      = doc["yesterday_min"]      | 0;
+  g_state.yesterday_late_min = doc["yesterday_late_min"] | 0;
+  g_state.active_now         = doc["active_now"]         | false;
+  g_state.late_night_streak  = doc["late_night_streak"]  | 0;
+  g_state.silent_hours       = doc["silent_hours"]       | 0;
 
   if (!g_state.manual_override) {
     g_state.stage = stageFromLifetimeMinutes(g_state.lifetime_min);
@@ -401,6 +487,9 @@ static void handleKey(char c) {
       // exit manual override — heartbeat-driven state takes over again
       g_state.manual_override = false;
       break;
+    case 'p':
+      g_state.mode = (g_state.mode == MODE_POSTMORTEM) ? MODE_NORMAL : MODE_POSTMORTEM;
+      break;
     default: changed = false; break;
   }
   if (changed) {
@@ -430,10 +519,20 @@ void loop() {
     for (auto c : status.word) handleKey(c);
   }
 
+  static Mode last_mode = MODE_NORMAL;
   if (g_dirty) {
-    drawPet();
-    drawHeader();
-    drawFooter();
+    bool mode_changed = (last_mode != g_state.mode);
+    if (g_state.mode == MODE_POSTMORTEM) {
+      drawPostmortem();                       // does its own fillScreen
+    } else {
+      if (mode_changed) {
+        M5Cardputer.Display.fillScreen(COL_BG);
+      }
+      drawHeader();
+      drawPet();
+      drawFooter();
+    }
+    last_mode = g_state.mode;
     g_dirty = false;
   }
 
