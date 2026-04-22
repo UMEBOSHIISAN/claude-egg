@@ -17,6 +17,10 @@ tools/state.json
 # macOS
 .DS_Store
 
+# Codex task files (internal, never publish)
+for_codex/
+logs/codex/
+
 # Editor
 *.swp
 *~
