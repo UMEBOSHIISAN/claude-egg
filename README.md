@@ -9,6 +9,38 @@
 
 ---
 
+## The creature
+
+Five life stages, driven by your cumulative Claude Code minutes:
+
+<table>
+<tr>
+  <td align="center"><img src="data/default/sprites/egg_happy.gif" width="160"><br><b>egg</b><br><sub>0 – 30 min</sub></td>
+  <td align="center"><img src="data/default/sprites/tadpole_happy.gif" width="160"><br><b>tadpole</b><br><sub>30 min – 10 h</sub></td>
+  <td align="center"><img src="data/default/sprites/frog_happy.gif" width="160"><br><b>frog</b><br><sub>10 h – 50 h</sub></td>
+  <td align="center"><img src="data/default/sprites/toad_happy.gif" width="160"><br><b>toad</b><br><sub>50 h – 300 h</sub></td>
+  <td align="center"><img src="data/default/sprites/pond-sage_happy.gif" width="160"><br><b>pond-sage</b><br><sub>300 h +</sub></td>
+</tr>
+</table>
+
+Seven moods, recomputed every heartbeat from today's usage pattern:
+
+<table>
+<tr>
+  <td align="center"><img src="data/default/sprites/frog_happy.gif" width="120"><br><sub>happy</sub></td>
+  <td align="center"><img src="data/default/sprites/frog_excited.gif" width="120"><br><sub>excited</sub></td>
+  <td align="center"><img src="data/default/sprites/frog_tired.gif" width="120"><br><sub>tired</sub></td>
+  <td align="center"><img src="data/default/sprites/frog_grumpy.gif" width="120"><br><sub>grumpy</sub></td>
+  <td align="center"><img src="data/default/sprites/frog_sick.gif" width="120"><br><sub>sick 🤒</sub></td>
+  <td align="center"><img src="data/default/sprites/frog_lonely.gif" width="120"><br><sub>lonely</sub></td>
+  <td align="center"><img src="data/default/sprites/frog_zen.gif" width="120"><br><sub>zen</sub></td>
+</tr>
+</table>
+
+> Stages are **permanent and one-way.** The pet never dies. Neglect makes it sad; 3 a.m. sessions make it sick. That's it.
+
+---
+
 ## Why this exists
 
 Two upstream projects had already done most of the hard work, and between them they told you exactly what was missing:
