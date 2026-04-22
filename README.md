@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="docs/title.gif" alt="CLAUDE - EGG" width="480">
+</div>
+
 # Claude-EGG
 
 **A physical pet that lives on an M5Stack Cardputer and grows from your Claude Code sessions.** Fork the repo, swap the sprite pack, the dialogue pack, or the growth rules — the pet becomes *yours*.
