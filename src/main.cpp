@@ -153,7 +153,9 @@ static const uint16_t COL_BLE_NO = 0x780F;  // magenta
 
 static AnimatedGIF g_gif;
 static File        g_gif_file;
-static bool        g_lfs_ok = false;
+static bool        g_lfs_ok   = false;
+static bool        g_gif_open = false;
+static uint32_t    g_gif_next = 0;   // millis() when next frame is due
 
 static void* gifOpen(const char* fname, int32_t* size) {
   g_gif_file = LittleFS.open(fname);
@@ -187,14 +189,18 @@ static void gifLineDraw(GIFDRAW* pDraw) {
   uint16_t* pal = pDraw->pPalette;
   static uint16_t line[240];
   for (int x = 0; x < pDraw->iWidth; x++) line[x] = pal[src[x]];
-  // GIF canvas starts at kBodyTop so the header strip stays intact
   M5Cardputer.Display.pushImage(pDraw->iX, kBodyTop + pDraw->iY + pDraw->y,
                                 pDraw->iWidth, 1, line);
 }
 
-// Returns true if a GIF was found and drawn (first frame only).
-static bool tryDrawGif(Stage stage, Mood mood) {
+static void gifCloseAnim() {
+  if (g_gif_open) { g_gif.close(); g_gif_open = false; }
+}
+
+// Opens GIF for stage/mood. Returns true if a file was found.
+static bool gifOpenAnim(Stage stage, Mood mood) {
   if (!g_lfs_ok) return false;
+  gifCloseAnim();
   char path[80], fallback[80];
   snprintf(path,     sizeof(path),     "/%s/sprites/%s_%s.gif",
            DEFAULT_BUDDY, kStageName[stage], kMoodName[mood]);
@@ -203,12 +209,27 @@ static bool tryDrawGif(Stage stage, Mood mood) {
   const char* tries[2] = { path, fallback };
   for (auto p : tries) {
     if (g_gif.open(p, gifOpen, gifClose, gifRead, gifSeek, gifLineDraw)) {
-      g_gif.playFrame(true, nullptr);
-      g_gif.close();
+      g_gif_open = true;
+      g_gif_next = 0;
       return true;
     }
   }
   return false;
+}
+
+// Advance one frame if due. Returns false when no GIF is open.
+static bool gifTick() {
+  if (!g_gif_open) return false;
+  uint32_t now = millis();
+  if (now < g_gif_next) return true;
+  int delay_ms = 0;
+  if (!g_gif.playFrame(false, &delay_ms)) {
+    // end of animation — rewind for loop
+    g_gif.reset();
+    g_gif.playFrame(false, &delay_ms);
+  }
+  g_gif_next = now + (delay_ms > 0 ? (uint32_t)delay_ms : 100u);
+  return true;
 }
 
 // ---- rendering (shapes fallback — used when no GIF is present) ------------
@@ -427,7 +448,8 @@ static void drawFooter() {
 
 static void drawPet() {
   M5Cardputer.Display.fillRect(0, kBodyTop, kScreenW, kBodyBot - kBodyTop, COL_BG);
-  if (!tryDrawGif(g_state.stage, g_state.mood)) {
+  if (!gifOpenAnim(g_state.stage, g_state.mood)) {
+    // no GIF — shapes fallback
     switch (g_state.stage) {
       case STAGE_EGG:   drawEgg(); break;
       case STAGE_CHILD: drawTadpole(g_state.mood); break;
@@ -593,6 +615,7 @@ void loop() {
   if (g_dirty) {
     bool mode_changed = (last_mode != g_state.mode);
     if (g_state.mode == MODE_POSTMORTEM) {
+      gifCloseAnim();
       drawPostmortem();                       // does its own fillScreen
     } else {
       if (mode_changed) {
@@ -605,6 +628,8 @@ void loop() {
     last_mode = g_state.mode;
     g_dirty = false;
   }
+
+  if (g_state.mode != MODE_POSTMORTEM) gifTick();
 
   delay(20);
 }
