@@ -4,8 +4,8 @@
 
 ---
 
-> **Status: Phase A + Phase B running end-to-end today.**
-> The Cardputer flashes in two minutes (shapes-based renderer, no assets yet). A macOS background daemon tails your Claude Code session logs, rolls up today's active minutes + late-night streak, and pushes a JSON heartbeat to the device over BLE NUS every 10 seconds. The pet's stage and mood update in real time from your actual usage. Phase C swaps the shape renderer for LittleFS-backed GIFs. See [the roadmap](#roadmap) below.
+> **Status: All three phases shipped.**
+> The Cardputer flashes in two minutes. A macOS background daemon tails your Claude Code session logs, rolls up today's active minutes + late-night streak, and pushes a JSON heartbeat over BLE NUS every 10 seconds. The default pack ships 35 animated GIFs (5 stages × 7 moods) stored on LittleFS — no shapes fallback needed out of the box. See [the roadmap](#roadmap) below.
 
 ---
 
@@ -91,7 +91,7 @@ cd claude-egg
 pio run -e m5cardputer -t upload
 ```
 
-On reset you'll see the `tartan` frog centered on the screen in the default `teen / happy` state. The header reads `Claude-EGG :: default`; the footer shows the current stage, mood, and minute counters.
+On reset you'll see the egg GIF animating in the default `egg / happy` state. The header reads `Claude-EGG :: default`; the footer shows the current stage, mood, and minute counters.
 
 ### Phase A keyboard controls
 
@@ -151,7 +151,7 @@ Three independent swap axes, each of which you can touch without asking anyone's
 
 ### 1. Look — `sprites/*.gif`
 
-Pixel art, cartoon, ASCII creature rendered into a GIF, photograph, abstract geometry — anything that fits in 240×135. Filenames are keyed `<stage>_<mood>.gif`. Missing pairs fall back to `<stage>_default`, then to a global default, so a minimal pack can ship five sprites (one per stage) and still render every mood without crashes.
+Pixel art, cartoon, ASCII creature rendered into a GIF, photograph, abstract geometry — anything that fits in **240×101** (the body area between header and footer strips). Filenames are keyed `<stage>_<mood>.gif`. Missing pairs fall back to `<stage>_default.gif`, then to the shapes renderer, so a minimal pack can ship five sprites (one per stage) and still render every mood without crashes.
 
 ### 2. Voice — `lines/*.yaml`
 
@@ -182,8 +182,8 @@ Everything else — the pack authoring checklist, license choices, and submissio
 
 ## Built-in packs
 
-- [`buddies/default/`](buddies/default/) — MIT-licensed generic placeholder. Fork template. The intended design is that a new forker's first commit is literally `cp -r buddies/default buddies/<their-name>`.
-- [`buddies/tartan/`](buddies/tartan/) — **タータン (Tartan)**, UMEBOSHI's reference pack. A frog that puffs up when well-fed, dries out when starved, and turns belly-up with X eyes after two nights of 3 a.m. grinding. **CC-BY-NC-4.0**, non-commercial redistribution only. Shipped as the worked example of what a branded character pack looks like — both the art direction and the license are representative of how a brand-owning forker should ship.
+- [`buddies/default/`](buddies/default/) — MIT-licensed pack. Ships 35 animated GIFs (5 stages × 7 moods, 240×101 px each). Intended as both the out-of-box experience and the fork template — copy the directory, drop in your art, done.
+- [`buddies/tartan/`](buddies/tartan/) — **タータン (Tartan)**, UMEBOSHI's reference pack. A frog that puffs up when well-fed, dries out when starved, and turns belly-up with X eyes after two nights of 3 a.m. grinding. **CC-BY-NC-4.0**, non-commercial redistribution only. Shipped as a worked example of what a branded character pack looks like.
 
 ## Architecture
 
@@ -265,15 +265,14 @@ The daemon is stateless with respect to the pet. All pet identity — thresholds
 - State persisted to `~/Library/Application Support/claude-egg/state.json` between runs.
 - launchd agent template ships at [`examples/com.umeboshi.claude-egg.plist`](examples/com.umeboshi.claude-egg.plist).
 
-### Phase C — LittleFS asset swaps
-- AnimatedGIF + LittleFS renderer replaces the current shape renderer.
-- Pack authors ship real GIFs. The default pack gets a placeholder pixel blob; the `tartan` pack gets proper frog art.
-- `pio run -t uploadfs` ships the pack without a firmware rebuild.
+### Phase C — LittleFS asset swaps ✅ shipped
+- AnimatedGIF + LittleFS renderer replaces the shapes renderer.
+- Default pack ships 35 GIFs (5 stages × 7 moods). Each stage has a distinct animation: egg bounces, tadpole swims, frog/toad breathe, pond-sage pulses.
+- `pio run -t uploadfs` ships any pack update without a firmware rebuild.
 
 ### Later — not blocking a v1 public launch
 - **Pack layering.** Today a pack owns sprites + voice + rules as a single bundle. A future format lets you mix them: *tartan sprites + hype voice + idle rules* as three independent choices.
 - **Pack discovery.** A community pack index fetched over HTTPS so the device can list available packs without requiring a reflash.
-- **Morning postmortem view.** Press a key at wake-up → yesterday's full diagnosis screen.
 - **CLI companion.** A `claude-egg today` / `claude-egg stats` CLI that prints the same numbers the pet sees, for when the Cardputer is charging or traveling.
 
 ## Not in scope
@@ -299,8 +298,10 @@ claude-egg/
 │   └── requirements.txt
 ├── examples/
 │   └── com.umeboshi.claude-egg.plist  ← launchd agent template
-├── data/                          ← LittleFS image staging (Phase C)
-│   └── chars/
+├── data/                          ← LittleFS image staging
+│   ├── chars/
+│   └── default/
+│       └── sprites/               ← 35 GIFs (5 stages × 7 moods, 240×101 px)
 ├── docs/
 │   └── DESIGN.md                  ← full specification
 └── buddies/

@@ -1,24 +1,58 @@
 name: default
-display_name: Pixel Blob
+display_name: Default
 author: claude-egg contributors
 license: MIT
-version: 1
+version: 2
 description: >
-  Placeholder pack. Ships with the repo so forks start from a working
-  manifest. Replace every file under sprites/ and lines/ to make it yours.
+  Default pack. Ships 35 animated GIFs (5 stages × 7 moods, 240×101 px).
+  Fork this directory, replace sprites/ and lines/, and flash to make the pet yours.
 
 stages:
-  egg:   0
-  child: 30
-  teen:  600
-  adult: 3000
-  elder: 18000
+  egg:       0
+  tadpole:   30
+  frog:      600
+  toad:      3000
+  pond-sage: 18000
 
 frames:
-  egg_default:    egg.gif
-  child_default:  child.gif
-  teen_default:   teen.gif
-  adult_default:  adult.gif
-  elder_default:  elder.gif
+  egg_happy:         egg_happy.gif
+  egg_excited:       egg_excited.gif
+  egg_tired:         egg_tired.gif
+  egg_grumpy:        egg_grumpy.gif
+  egg_sick:          egg_sick.gif
+  egg_lonely:        egg_lonely.gif
+  egg_zen:           egg_zen.gif
+
+  tadpole_happy:     tadpole_happy.gif
+  tadpole_excited:   tadpole_excited.gif
+  tadpole_tired:     tadpole_tired.gif
+  tadpole_grumpy:    tadpole_grumpy.gif
+  tadpole_sick:      tadpole_sick.gif
+  tadpole_lonely:    tadpole_lonely.gif
+  tadpole_zen:       tadpole_zen.gif
+
+  frog_happy:        frog_happy.gif
+  frog_excited:      frog_excited.gif
+  frog_tired:        frog_tired.gif
+  frog_grumpy:       frog_grumpy.gif
+  frog_sick:         frog_sick.gif
+  frog_lonely:       frog_lonely.gif
+  frog_zen:          frog_zen.gif
+
+  toad_happy:        toad_happy.gif
+  toad_excited:      toad_excited.gif
+  toad_tired:        toad_tired.gif
+  toad_grumpy:       toad_grumpy.gif
+  toad_sick:         toad_sick.gif
+  toad_lonely:       toad_lonely.gif
+  toad_zen:          toad_zen.gif
+
+  pond-sage_happy:   pond-sage_happy.gif
+  pond-sage_excited: pond-sage_excited.gif
+  pond-sage_tired:   pond-sage_tired.gif
+  pond-sage_grumpy:  pond-sage_grumpy.gif
+  pond-sage_sick:    pond-sage_sick.gif
+  pond-sage_lonely:  pond-sage_lonely.gif
+  pond-sage_zen:     pond-sage_zen.gif
 
 lines_fallback: default
