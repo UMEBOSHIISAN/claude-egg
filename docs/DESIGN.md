@@ -24,15 +24,15 @@ Before designing anything, look at what the two upstream projects (Anthropic + M
 
 ### 1.3 What the research already rejected
 
-From `cardputer_buddy_extension_research_2026-04-19.md`:
+Design constraints from prior research:
 
 - ❌ On-device LLM on the Cardputer itself.
 - ❌ LE Audio / LC3 (too early).
 - ❌ Installing Cardputer toolchains on the production Mac (env-isolation).
 - ❌ Flashing random binaries from M5Burner (supply chain).
-- ❌ Having the device write directly to production SSOT.
+- ❌ Having the device write directly to production systems.
 
-All of these apply to this project too. In particular: **the Mac daemon reads Claude logs, never writes to any xops/ops/WP SSOT.** It's a read-only tenant of the host.
+All of these apply to this project too. In particular: **the Mac daemon reads Claude logs, never writes to any production system.** It's a read-only tenant of the host.
 
 ## 2. System shape
 
